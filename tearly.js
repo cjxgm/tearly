@@ -12,7 +12,7 @@
         return new Promise((resolve, reject) => {
             var req = new XMLHttpRequest();
             req.onload = function() {
-                if (this.status === 200 || this.status === 201) {
+                if (this.status >= 200 && this.status < 300) {
                     resolve();
                 }
                 else {
@@ -109,7 +109,7 @@
 (function () {
     // FIXME: debug only
     var Underscode = this.U;
-    var Dav = this.DD;
+    var Dav = this.D;
     var SimpleTiddlerFormat = this.S;
 
     function Tearly(wiki)
@@ -171,7 +171,7 @@
     }
 
     Tearly.prototype.base_url = function (href) {
-        return "http://dummy";  // TODO
+        return "http://127.0.0.1:7777";  // TODO
     }
 
     Tearly.prototype.url_from_path = function (path, base_url) {
