@@ -75,9 +75,42 @@
 }).call(this);
 
 (function () {
+    function SimpleTiddlerFormat()
+    {
+    }
+
+    SimpleTiddlerFormat.encode = function (tiddler) {
+        var fields = tiddler.fields;
+        var rest = JSON.stringify(fields, (k, v) => (k === "title" || k === "text") ? undefined : v);
+        var text = fields.title + "\n" + rest + "\n" + fields.text;
+        return text;
+    }
+
+    SimpleTiddlerFormat.decode = function (text) {
+        text = text.split("\n");
+
+        var title = text.splice(0, 1)[0];
+        var fields = text.splice(0, 1)[0];
+        text = text.join("\n");
+
+        fields.title = title;
+        fields.text = text;
+
+        var tiddler = {
+            fields: fields,
+        };
+
+        return tiddler;
+    }
+
+    this.S = SimpleTiddlerFormat;
+}).call(this);
+
+(function () {
     // FIXME: debug only
     var Underscode = this.U;
     var Dav = this.DD;
+    var SimpleTiddlerFormat = this.S;
 
     function Tearly(wiki)
     {
@@ -109,9 +142,8 @@
     }
 
     Tearly.prototype.tiddler_of = function (title) {
-        // FIXME: dummy
-        // TODO: read from the tiddler
-        return "DUMMY of " + title;
+        var tiddler = this.wiki.getTiddler(title);
+        return SimpleTiddlerFormat.encode(tiddler);
     }
 
     Tearly.prototype.tiddlers = function () {
@@ -147,8 +179,12 @@
         return base_url + path;
     }
 
+    Tearly.prototype.path_from_title = function (title) {
+        return "/tiddlers/" + Underscode.encode(title);
+    }
+
     Tearly.prototype.url_from_title = function (title, base_url) {
-        var path = "/tiddlers/" + Underscode.encode(title);
+        var path = this.path_from_title(title);
         return this.url_from_path(path, base_url);
     }
 
@@ -158,8 +194,8 @@
 
         // put index
         var index = this.index_template();
-        var non_boot_tiddlers = [...tiddlers.non_boot].join("\n");
-        var boot_tiddlers = [...tiddlers.boot].join("\n");
+        var non_boot_tiddlers = [...tiddlers.non_boot].map(title => this.path_from_title(title)).join("\n");
+        var boot_tiddlers = [...tiddlers.boot].map(title => this.path_from_title(title)).join("\n");
         index = index.replace("$non-boot-tiddlers$", non_boot_tiddlers);
         index = index.replace("$boot-tiddlers$", boot_tiddlers);
         Dav.put(this.url_from_path("/index.html"), index)
