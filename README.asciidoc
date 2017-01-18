@@ -1,0 +1,13 @@
+= tearly: Tear apart TiddlyWiki for cache-friendliness
+
+*WORK IN PROGRESS*
+
+I just want to use TiddlyWiki as a new form of static blog. But everytime I
+update the "blog", the user have to download megabytes of data. Awful!
+
+With tearly, the user still downloads megabytes of data
+the first time they come to visit, but later updates only
+apply a `diff` of pressure on the user -- only updated tiddlers
+get downloaded, all other big ones (like "core",
+or "KaTeX plugin" something) get reused from the browser cache. Great!
+
