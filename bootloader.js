@@ -3,9 +3,9 @@
 (function () {
     function Aborted() {}
 
-    function Utils()
-    {
-    }
+    /////////////////////////////////////////////////////
+
+    function Utils() {}
 
     Utils.prototype.clamp = function(x, min, max) {
         return Math.max(Math.min(x, max), min);
@@ -63,22 +63,6 @@
         fields.text = text;
 
         return fields;
-    };
-
-    Utils.prototype.search = function(array, matcher) {
-        var idx = -1;
-        array.some((elem, i) => {
-            if (matcher(elem)) {
-                idx = i;
-                return true;
-            }
-        });
-        return idx;
-    };
-
-    Utils.prototype.extract = function(array, matcher) {
-        var idx = this.search(array, matcher);
-        if (idx != -1) return array.splice(idx, 1)[0];
     };
 
     /////////////////////////////////////////////////////
@@ -143,8 +127,7 @@
     };
 
     Bootloader.prototype.bootKernelPrefix = function (tiddlers) {
-        var tiddler = this.utils.extract(tiddlers,
-                x => x.title === this.config.kernelPrefix);
+        var tiddler = tiddlers.find(x => x.title === this.config.kernelPrefix);
         if (!tiddler) throw new Error("kernel prefix not found: " + this.config.kernelPrefix);
         console.log(tiddler);
         try {
@@ -156,8 +139,7 @@
     };
 
     Bootloader.prototype.bootTiddlers = function (tiddlers) {
-        var kernel = this.utils.extract(tiddlers,
-                x => x.title === this.config.kernel);
+        var kernel = tiddlers.find(x => x.title === this.config.kernel);
         window.$tw.preloadTiddlerArray(tiddlers);
         return Promise.resolve(kernel);
     };
