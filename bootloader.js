@@ -86,9 +86,13 @@
             .then(kernelTiddler => this.bootKernel(kernelTiddler))
             .then(() => this.done())
             .catch(err => {
+                console.error(err);
                 this.showError("ABORTED");
                 alert(err);
-                throw err;
+                window.setTimeout(() => {
+                    debugger;
+                    throw err;     // stop the rest of script from execution
+                });
             })
         ;
     };
@@ -103,11 +107,16 @@
         this.setProgressLoading(0, 1);
         var loaded = 0;
         var pending = [];
+        var rejected = false;
         pathList.forEach(path => {
             var load = this.utils.get(path)
                 .then(text => {
+                    if (rejected) return Promise.reject();
                     this.setProgressLoading(++loaded, pathList.length);
                     return text;
+                }, err => {
+                    rejected = true;
+                    throw err;
                 });
             pending.push(load);
         });
