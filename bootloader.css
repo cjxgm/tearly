@@ -17,6 +17,9 @@
     height: 100vh;
     padding: 50px;
     font-family: monospace;
+
+    opacity: 1;
+    transition: opacity ease-out 0.4s;
 }
 
 #bootloader .progress-container {
