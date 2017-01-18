@@ -1,6 +1,8 @@
 'use strict';
 
 (function () {
+    function Aborted() {}
+
     function Utils()
     {
     }
@@ -9,19 +11,35 @@
         return Math.max(Math.min(x, max), min);
     };
 
-    Utils.prototype.get = function(url) {
+    Utils.prototype.get = function(url, progress) {
+        progress = progress || (frac => {});
         return new Promise((resolve, reject) => {
+            progress(0);
             var req = new XMLHttpRequest();
             req.onload = function() {
                 if (this.status >= 200 && this.status < 300) {
+                    progress(1);
                     resolve(this.responseText);
                 }
                 else {
-                    reject(Error(this.statusText + "\n" + this.responseText));
+                    reject(new Error(this.statusText + "\n" + this.responseText));
                 }
             };
-            req.onerror = ev => reject(ev);
-            req.onabort = ev => reject(ev);
+            req.onerror = function (ev) {
+                console.error(ev);
+                if (ev.type === 'error') {
+                    reject(new Error("interrupted"));
+                } else {
+                    reject(new Error("unknown error"));
+                }
+            };
+            req.onabort = function (ev) {
+                console.error(ev);
+                reject(new Aborted());
+            };
+            req.onprogress = function (ev) {
+                if (ev.lengthComputable) progress(ev.loaded / ev.total);
+            };
             req.open("GET", url);
             req.overrideMimeType("text/plain");
             req.send();
@@ -88,7 +106,7 @@
             .catch(err => {
                 console.error(err);
                 this.showError("ABORTED");
-                alert(err);
+                if (!(err instanceof Aborted)) alert(err);
                 window.setTimeout(() => {
                     debugger;
                     throw err;     // stop the rest of script from execution
@@ -105,19 +123,19 @@
 
     Bootloader.prototype.loadTiddlers = function (pathList) {
         this.setProgressLoading(0, 1);
-        var loaded = 0;
+        var progresses = [];
         var pending = [];
         var rejected = false;
-        pathList.forEach(path => {
-            var load = this.utils.get(path)
-                .then(text => {
-                    if (rejected) return Promise.reject();
-                    this.setProgressLoading(++loaded, pathList.length);
-                    return text;
-                }, err => {
-                    rejected = true;
-                    throw err;
-                });
+        pathList.forEach((path, i) => {
+            var load = this.utils.get(path, frac => {
+                if (rejected) return;
+                progresses[i] = frac;
+                var progress = progresses.reduce((x, y) => x + y, 0);
+                this.setProgressLoading(progress, pathList.length);
+            }).catch(err => {
+                rejected = true;
+                throw err;
+            });
             pending.push(load);
         });
         return Promise.all(pending)
@@ -127,7 +145,7 @@
     Bootloader.prototype.bootKernelPrefix = function (tiddlers) {
         var tiddler = this.utils.extract(tiddlers,
                 x => x.title === this.config.kernelPrefix);
-        if (!tiddler) throw Error("kernel prefix not found: " + this.config.kernelPrefix)
+        if (!tiddler) throw new Error("kernel prefix not found: " + this.config.kernelPrefix)
         return Promise.resolve(tiddlers);
     };
 
@@ -159,7 +177,6 @@
     };
 
     Bootloader.prototype.setProgress = function (frac) {
-        console.log(frac);
         var percent = this.utils.clamp(parseInt(frac * 100), 0, 100);
         this.elProgress.style.width = percent + "%";
     };
