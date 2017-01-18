@@ -129,7 +129,6 @@
     Bootloader.prototype.bootKernelPrefix = function (tiddlers) {
         var tiddler = tiddlers.find(x => x.title === this.config.kernelPrefix);
         if (!tiddler) throw new Error("kernel prefix not found: " + this.config.kernelPrefix);
-        console.log(tiddler);
         try {
             eval.call(window, tiddler.text);
         } catch (e) {
