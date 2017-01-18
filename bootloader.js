@@ -10,8 +10,22 @@
     };
 
     Utils.prototype.get = function(url) {
-        return this.later(Math.random() * 2000)
-            .then(() => "TODO: " + url)
+        return new Promise((resolve, reject) => {
+            var req = new XMLHttpRequest();
+            req.onload = function() {
+                if (this.status >= 200 && this.status < 300) {
+                    resolve(this.responseText);
+                }
+                else {
+                    reject(Error(this.statusText + "\n" + this.responseText));
+                }
+            };
+            req.onerror = ev => reject(ev);
+            req.onabort = ev => reject(ev);
+            req.open("GET", url);
+            req.overrideMimeType("text/plain");
+            req.send();
+        });
     };
 
     Utils.prototype.later = function(ms) {
@@ -20,12 +34,42 @@
         });
     };
 
+    Utils.prototype.decodeTiddlerFields = function(text) {
+        text = text.split("\n");
+
+        var title = text.splice(0, 1)[0];
+        var fields = JSON.parse(text.splice(0, 1)[0]);
+        text = text.join("\n");
+
+        fields.title = title;
+        fields.text = text;
+
+        return fields;
+    };
+
+    Utils.prototype.search = function(array, matcher) {
+        var idx = -1;
+        array.some((elem, i) => {
+            if (matcher(elem)) {
+                idx = i;
+                return true;
+            }
+        });
+        return idx;
+    };
+
+    Utils.prototype.extract = function(array, matcher) {
+        var idx = this.search(array, matcher);
+        if (idx != -1) return array.splice(idx, 1);
+    };
+
     /////////////////////////////////////////////////////
 
     function Bootloader(elBootloader)
     {
         this.elBootloader = elBootloader;
         this.elProgress = elBootloader.querySelector(".progress");
+        this.elError = elBootloader.querySelector(".error");
         this.utils = new Utils();
         this.config = {
             tiddlersList: "./tiddlers.list",
@@ -34,24 +78,18 @@
         };
     }
 
-    Bootloader.prototype.reportError = function (err, stage) {
-        console.error(stage);
-        throw Error(err);
-    };
-
-    Bootloader.prototype.errorReporter = function (stage) {
-        return err => {
-            this.reportError(err, stage);
-        };
-    };
-
     Bootloader.prototype.boot = function () {
         this.loadTiddlersList()
-            .then(list => this.loadTiddlers(list), this.errorReporter("load tiddlers list"))
-            .then(tiddlers => this.bootKernelPrefix(tiddlers), this.errorReporter("load tiddlers"))
-            .then(tiddlers => this.bootTiddlers(tiddlers), this.errorReporter("boot kernel prefix"))
-            .then(kernelTiddler => this.bootKernel(kernelTiddler), this.errorReporter("boot tiddlers"))
-            .then(() => this.done(), this.errorReporter("boot kernel"))
+            .then(list => this.loadTiddlers(list))
+            .then(tiddlers => this.bootKernelPrefix(tiddlers))
+            .then(tiddlers => this.bootTiddlers(tiddlers))
+            .then(kernelTiddler => this.bootKernel(kernelTiddler))
+            .then(() => this.done())
+            .catch(err => {
+                this.showError("ABORTED");
+                alert(err);
+                throw err;
+            })
         ;
     };
 
@@ -61,14 +99,26 @@
             .then(titles => titles.split(/\n+/).filter(x => x.length));
     };
 
-    Bootloader.prototype.loadTiddlers = function (titleList) {
+    Bootloader.prototype.loadTiddlers = function (pathList) {
         this.setProgressLoading(0, 1);
-        return this.utils.later(1000)
-            .then(() => this.setProgressLoading(1, 1))
-            .then(() => titleList)
+        var loaded = 0;
+        var pending = [];
+        pathList.forEach(path => {
+            var load = this.utils.get(path)
+                .then(text => {
+                    this.setProgressLoading(++loaded, pathList.length);
+                    return text;
+                });
+            pending.push(load);
+        });
+        return Promise.all(pending)
+            .then(tiddlers => tiddlers.map(text => this.utils.decodeTiddlerFields(text)));
     };
 
     Bootloader.prototype.bootKernelPrefix = function (tiddlers) {
+        var tiddler = this.utils.extract(tiddlers,
+                x => x.title === this.config.kernelPrefix);
+        if (!tiddler) throw Error("kernel prefix not found: " + this.config.kernelPrefix)
         return Promise.resolve(tiddlers);
     };
 
@@ -100,6 +150,7 @@
     };
 
     Bootloader.prototype.setProgress = function (frac) {
+        console.log(frac);
         var percent = this.utils.clamp(parseInt(frac * 100), 0, 100);
         this.elProgress.style.width = percent + "%";
     };
@@ -110,6 +161,10 @@
 
     Bootloader.prototype.hideBootloader = function () {
         this.elBootloader.style.display = "none";
+    };
+
+    Bootloader.prototype.showError = function (err) {
+        this.elError.textContent = err;
     };
 
     window.onload = ev => {
