@@ -2,6 +2,7 @@
 /*\
 title: $:/plugins/cjxgm/tearly/underscode.js
 type: application/javascript
+module-type: library
 \*/
 
 (function () {

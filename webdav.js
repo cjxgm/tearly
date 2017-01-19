@@ -2,6 +2,7 @@
 /*\
 title: $:/plugins/cjxgm/tearly/webdav.js
 type: application/javascript
+module-type: library
 \*/
 
 (function (tiddlersList) {

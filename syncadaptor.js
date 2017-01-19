@@ -4,14 +4,18 @@ title: $:/plugins/cjxgm/tearly/syncadaptor.js
 type: application/javascript
 module-type: syncadaptor
 \*/
-
+var $bootloader = {
+    tiddlersList: [
+        "debug",
+    ],
+};
 (function (tiddlersList) {
-    var WebDAV = require('$:/plugins/cjxgm/tearly/webdav.js').WebDAV;
-    var Underscode = require('$:/plugins/cjxgm/tearly/underscode.js').Underscode;
-    var Utils = require('$:/plugins/cjxgm/tearly/utils.js').Utils;
-
     function SyncAdaptor(options)
     {
+        var WebDAV = require('$:/plugins/cjxgm/tearly/webdav.js').WebDAV;
+        var Underscode = require('$:/plugins/cjxgm/tearly/underscode.js').Underscode;
+        var Utils = require('$:/plugins/cjxgm/tearly/utils.js').Utils;
+
         this.wiki = options.wiki;
         this.dav = new WebDAV();
         this.uc = new Underscode();
@@ -20,12 +24,12 @@ module-type: syncadaptor
     }
 
     //// SyncAdaptor Interface ////
-    SyncAdaptor.prototype.isReady = () => true;
-    SyncAdaptor.prototype.getTiddlerInfo = () => {};
+    SyncAdaptor.prototype.isReady = function () { return true };
+    SyncAdaptor.prototype.getTiddlerInfo = function () {};
 
     SyncAdaptor.prototype.saveTiddler = function (tiddler, callback) {
-        var title = tidders.fields.title;
-        var tiddlerPath = "./tiddlers/" + this.uc.encode(tiddler.fields.title) + ".tid";
+        var title = tiddler.fields.title;
+        var tiddlerPath = "./tiddlers/" + this.uc.encode(title) + ".tid";
         var tiddler = this.utils.encodeTiddler(tiddler);
         this.addTitle(title)
             .then(() => this.dav.put(tiddlerPath, tiddler))
@@ -34,8 +38,8 @@ module-type: syncadaptor
 
     SyncAdaptor.prototype.deleteTiddler = function (title, callback) {
         var tiddlerPath = "./tiddlers/" + this.uc.encode(title) + ".tid";
-        return this.dav.delete(tiddlerPath)
-            .then(() => this.deleteTitle(title))
+        return this.deleteTitle(title)
+            .then(deleted => { if (deleted) this.dav.delete(tiddlerPath) })
             .then(() => callback(), err => callback(err));
     };
 
@@ -49,8 +53,8 @@ module-type: syncadaptor
 
     SyncAdaptor.prototype.deleteTitle = function (title) {
         if (this.titles.delete(title))
-            return this.updateTitles();
-        return Promise.resolve();
+            return this.updateTitles().then(() => true);
+        return Promise.resolve(false);
     }
 
     SyncAdaptor.prototype.updateTitles = function () {
