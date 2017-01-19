@@ -67,6 +67,8 @@
 
     /////////////////////////////////////////////////////
 
+    var $bootloader = {};
+
     function Bootloader(elBootloader)
     {
         this.elBootloader = elBootloader;
@@ -139,6 +141,7 @@
         return this.utils.later().then(() => {
             var kernel = tiddlers.find(x => x.title === this.config.kernel);
             window.$tw.preloadTiddlerArray(tiddlers);
+            $bootloader.tiddlersList = tiddlers.map(x => x.title);
             return kernel;
         });
     };
@@ -187,6 +190,8 @@
     Bootloader.prototype.showError = function (err) {
         this.elError.textContent = err;
     };
+
+    this.$bootloader = $bootloader;
 
     window.onload = ev => {
         var el = document.querySelector("#bootloader");
