@@ -7,14 +7,14 @@ type: application/x-tiddler
 
 \define lingo-base() $:/language/ControlPanel/Tearly/
 \define bootstrap-button()
-<$reveal type="nomatch" state="$:/config/Tearly/BootstrapPrefix" text="">
+<$reveal type="nomatch" state="$:/config/tearly/BootstrapPrefix" text="">
 <$button><<lingo Bootstrap/Button/Caption>></$button>
 </$reveal>
-<$reveal type="match" state="$:/config/Tearly/BootstrapPrefix" text="">
+<$reveal type="match" state="$:/config/tearly/BootstrapPrefix" text="">
 Prefix cannot be empty.
 </$reveal>
 \end
-\define view-prefix() <$view tiddler="$:/config/Tearly/BootstrapPrefix"/>
+\define view-prefix() <$view tiddler="$:/config/tearly/BootstrapPrefix"/>
 
 ! <<lingo Bootstrap/Heading>>
 
@@ -22,7 +22,7 @@ Prefix cannot be empty.
 
 | !Settings |<|
 |<<lingo Bootstrap/HintSettings>> |<|
-| <<lingo Bootstrap/Prefix>>|<$edit-text tiddler="$:/config/Tearly/BootstrapPrefix" default="" tag="input"/> |
+| <<lingo Bootstrap/Prefix>>|<$edit-text tiddler="$:/config/tearly/BootstrapPrefix" default="" tag="input"/> |
 | !Examples |<|
 |<<lingo Bootstrap/HintExamples>> |<|
 | !FIles|!Upload Path |
