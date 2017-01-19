@@ -167,12 +167,13 @@
         this.setProgress(0.05);
     };
 
-    // initial progress is 10%, last progress is 95%
+    // initial progress is 10%, last progress is 99%
     Bootloader.prototype.setProgressLoading = function (i, total) {
-        this.setProgress(i / total * 0.85 + 0.10);
+        this.setProgress(i / total * 0.89 + 0.10);
     };
 
     Bootloader.prototype.setProgress = function (frac) {
+        frac = Math.exp((frac - 1) * 5);
         var percent = this.utils.clamp(parseInt(frac * 100), 0, 100);
         this.elProgress.style.width = percent + "%";
     };
