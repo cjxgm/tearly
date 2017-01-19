@@ -90,8 +90,8 @@
             .catch(err => {
                 console.error(err);
                 this.showError("ABORTED");
-                if (!(err instanceof Aborted)) alert(err);
-                window.setTimeout(() => {
+                this.utils.later(400).then(() => {
+                    if (!(err instanceof Aborted)) alert(err);
                     debugger;
                     throw err;     // stop the rest of script from execution
                 });
@@ -127,30 +127,27 @@
     };
 
     Bootloader.prototype.bootKernelPrefix = function (tiddlers) {
-        var tiddler = tiddlers.find(x => x.title === this.config.kernelPrefix);
-        if (!tiddler) throw new Error("kernel prefix not found: " + this.config.kernelPrefix);
-        try {
+        return this.utils.later().then(() => {
+            var tiddler = tiddlers.find(x => x.title === this.config.kernelPrefix);
+            if (!tiddler) throw new Error("kernel prefix not found: " + this.config.kernelPrefix);
             eval.call(window, tiddler.text);
-        } catch (e) {
-            return Promise.reject(e);
-        }
-        return Promise.resolve(tiddlers);
+            return tiddlers;
+        });
     };
 
     Bootloader.prototype.bootTiddlers = function (tiddlers) {
-        var kernel = tiddlers.find(x => x.title === this.config.kernel);
-        window.$tw.preloadTiddlerArray(tiddlers);
-        return Promise.resolve(kernel);
+        return this.utils.later().then(() => {
+            var kernel = tiddlers.find(x => x.title === this.config.kernel);
+            window.$tw.preloadTiddlerArray(tiddlers);
+            return kernel;
+        });
     };
 
     Bootloader.prototype.bootKernel = function (kernelTiddler) {
-        if (!kernelTiddler) throw new Error("kernel not found: " + this.config.kernel)
-        try {
+        return this.utils.later(400).then(() => {
+            if (!kernelTiddler) throw new Error("kernel not found: " + this.config.kernel);
             eval.call(window, kernelTiddler.text);
-        } catch (e) {
-            return Promise.reject(e);
-        }
-        return Promise.resolve();
+        });
     };
 
     Bootloader.prototype.done = function () {
@@ -158,7 +155,7 @@
         this.setProgress(1);
         this.utils.later(200)
             .then(() => this.setBootloaderOpacity(0))
-            .then(() => this.utils.later(400))
+            .then(() => this.utils.later(600))
             .then(() => this.hideBootloader());
         ;
     };
@@ -179,7 +176,8 @@
     };
 
     Bootloader.prototype.setBootloaderOpacity = function (opacity) {
-        this.elBootloader.style.opacity = opacity;
+        this.elBootloader.style.backgroundColor = "rgba(255, 255, 255, " + opacity + ")";
+        this.utils.later(200).then(() => this.elBootloader.style.opacity = opacity);
     };
 
     Bootloader.prototype.hideBootloader = function () {
