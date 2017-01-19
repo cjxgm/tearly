@@ -1,0 +1,9 @@
+created: 20170119083331068
+modified: 20170119103224256
+tags: 
+title: $:/language/ControlPanel/Tearly/Bootstrap/Description
+type: application/x-tiddler
+
+On normal usage, Tearly will upload your changes to your server through WebDAV by `PUT` and `DELETE` methods to/on the same URL in the browser address bar. But before that, you need to bootstrap tearly to your server --- tear apart the whole wiki to individual Tiddlers and upload them one by one via WebDAV by `PUT` and `MKCOL` methods.
+
+Bootstrapping can also be used to recover previous errors --- by reuploading the whole wiki again.

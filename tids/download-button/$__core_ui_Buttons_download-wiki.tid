@@ -1,0 +1,16 @@
+caption: {{$:/core/images/download-button}} {{$:/language/Buttons/DownloadWiki/Caption}}
+created: 20170119075659431
+description: {{$:/language/Buttons/DownloadWiki/Hint}}
+list-before: $:/core/ui/Buttons/save-wiki
+modified: 20170119081001753
+tags: $:/tags/PageControls
+title: $:/core/ui/Buttons/download-wiki
+
+<$button message="tm-download-file" param="$:/core/save/all" tooltip={{$:/language/Buttons/DownloadWiki/Hint}} aria-label={{$:/language/Buttons/DownloadWiki/Caption}} class=<<tv-config-toolbar-class>>>
+<$list filter="[<tv-config-toolbar-icons>prefix[yes]]">
+{{$:/core/images/download-button}}
+</$list>
+<$list filter="[<tv-config-toolbar-text>prefix[yes]]">
+<span class="tc-btn-text"><$text text={{$:/language/Buttons/DownloadWiki/Caption}}/></span>
+</$list>
+</$button>
