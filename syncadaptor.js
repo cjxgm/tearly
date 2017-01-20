@@ -70,7 +70,7 @@ module-type: syncadaptor
         return this.dav.put(path, list);
     }
 
-    if ($bootloader === "tearly") {
+    if (window.$bootloader === "tearly") {
         this.adaptorClass = SyncAdaptor;
     }
 }).call(exports);
