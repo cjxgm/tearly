@@ -15,6 +15,13 @@ module-type: library
         return text;
     };
 
+    Utils.prototype.tiddlersTitles = function(wiki) {
+        var filter = wiki.getTiddlerText("$:/config/SyncFilter");
+        var filter = wiki.compileFilter(filter);
+        var titles = filter.call(wiki).sort();
+        return titles;
+    };
+
     this.Utils = Utils;
 }).call(exports);
 

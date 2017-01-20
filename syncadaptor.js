@@ -4,8 +4,6 @@ title: $:/plugins/cjxgm/tearly/syncadaptor.js
 type: application/javascript
 module-type: syncadaptor
 \*/
-// TODO: remove this
-var $bootloader = "tearly";
 
 (function () {
     var WebDAV = require('$:/plugins/cjxgm/tearly/webdav.js').WebDAV;
@@ -18,10 +16,7 @@ var $bootloader = "tearly";
         this.dav = new WebDAV();
         this.uc = new Underscode();
         this.utils = new Utils();
-        this.titles = new Set(this.wiki.getTiddlers({
-            includeSystem: true,
-            sortField: "title",
-        }));
+        this.titles = new Set(this.utils.tiddlersTitles(this.wiki));
         this.onceSucceeded = false;
     }
 
