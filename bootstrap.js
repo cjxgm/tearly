@@ -18,7 +18,7 @@ module-type: library
         this.utils = new Utils();
         this.used = false;
         this.prefix = this.tiddlerText("$:/config/tearly/BootstrapPrefix");
-        this.tiddlersTitles = this.utils.tiddlersTitles();
+        this.tiddlersTitles = this.utils.tiddlersTitles(this.wiki);
         this.tiddlersList = this.tiddlersTitles.map(x => this.uc.encode(x)).join("\n");
     }
 
