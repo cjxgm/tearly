@@ -1,6 +1,6 @@
 caption: {{$:/language/ControlPanel/Tearly/Caption}}
 created: 20170119082735054
-modified: 20170120085735765
+modified: 20170120122815680
 revision: 0
 tags: $:/tags/ControlPanel
 title: $:/plugins/cjxgm/tearly/ControlPanel
@@ -13,6 +13,7 @@ type: text/vnd.tiddlywiki
             {{$:/state/tearly/Bootstrapping}}
             <$button>
                 <$action-setfield $tiddler="$:/state/tearly/Bootstrapping" text="yes" />
+                <$action-tearly-bootstrap />
                 <<lingo Bootstrap/Button/Caption>>
             </$button>
         </$reveal>
