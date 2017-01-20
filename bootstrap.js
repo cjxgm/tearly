@@ -19,7 +19,7 @@ module-type: library
         this.used = false;
         this.prefix = this.tiddlerText("$:/config/tearly/BootstrapPrefix");
         this.tiddlersTitles = this.utils.tiddlersTitles(this.wiki);
-        this.tiddlersList = this.tiddlersTitles.map(x => this.uc.encode(x)).join("\n");
+        this.tiddlersList = this.tiddlersTitles.map(x => this.titlePath(x, true)).join("\n");
     }
 
     // What needs to be done:
@@ -106,9 +106,9 @@ module-type: library
         return this.prefix + path;
     }
 
-    Bootstrap.prototype.titlePath = function (title) {
+    Bootstrap.prototype.titlePath = function (title, forLoading) {
         var titlePath = "tiddlers/" + this.uc.encode(title) + ".tid";
-        return this.fullPath(titlePath);
+        return forLoading ? "./" + titlePath : this.fullPath(titlePath);
     }
 
     this.Bootstrap = Bootstrap;

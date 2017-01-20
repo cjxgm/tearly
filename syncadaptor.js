@@ -66,8 +66,12 @@ module-type: syncadaptor
 
     SyncAdaptor.prototype.updateTitles = function () {
         var path = "./tiddlers.list";
-        var list = [...this.titles].map(x => this.uc.encode(x)).join("\n");
+        var list = [...this.titles].map(x => this.titlePath(x)).join("\n");
         return this.dav.put(path, list);
+    }
+
+    SyncAdaptor.prototype.titlePath = function (title) {
+        return "./tiddlers/" + this.uc.encode(title) + ".tid";
     }
 
     if (window.$bootloader === "tearly") {
