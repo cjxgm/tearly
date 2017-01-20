@@ -4,11 +4,13 @@ title: $:/plugins/cjxgm/tearly/syncadaptor.js
 type: application/javascript
 module-type: syncadaptor
 \*/
+// TODO: remove this
 var $bootloader = {
     tiddlersList: [
         "debug",
     ],
 };
+
 (function (tiddlersList) {
     function SyncAdaptor(options)
     {
@@ -21,6 +23,7 @@ var $bootloader = {
         this.uc = new Underscode();
         this.utils = new Utils();
         this.titles = new Set(tiddlersList);
+        this.onceSucceeded = false;
     }
 
     //// SyncAdaptor Interface ////
@@ -29,10 +32,18 @@ var $bootloader = {
 
     SyncAdaptor.prototype.saveTiddler = function (tiddler, callback) {
         var title = tiddler.fields.title;
+
+        // Special treatment for StoryList.
+        if (title === "$:/StoryList") {
+            // Don't save StoryList if you haven't saved any other stuff.
+            if (!this.onceSucceeded) return callback();
+        }
+
         var tiddlerPath = "./tiddlers/" + this.uc.encode(title) + ".tid";
         var tiddler = this.utils.encodeTiddler(tiddler);
         this.addTitle(title)
             .then(() => this.dav.put(tiddlerPath, tiddler))
+            .then(() => this.onceSucceeded = true)
             .then(() => callback(), err => callback(err));
     };
 
@@ -40,6 +51,7 @@ var $bootloader = {
         var tiddlerPath = "./tiddlers/" + this.uc.encode(title) + ".tid";
         return this.deleteTitle(title)
             .then(deleted => { if (deleted) this.dav.delete(tiddlerPath) })
+            .then(() => this.onceSucceeded = true)
             .then(() => callback(), err => callback(err));
     };
 
