@@ -1,8 +1,12 @@
-created: 20170119184110951
+author: Giumo Clanjor
+core-version: >=5.0.0
+created: 20170120142510966
 dependents: 
-description: Tearly
-modified: 20170119190124578
+description: Tearly: Tear apart TiddlyWiki for cache-friendliness
+list: readme usage
+modified: 20170120142510966
 plugin-type: plugin
+revision: 0
 tags: 
 title: $:/plugins/cjxgm/tearly
 type: application/json

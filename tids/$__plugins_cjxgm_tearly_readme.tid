@@ -1,0 +1,22 @@
+created: 20170120142600403
+modified: 20170120142726537
+title: $:/plugins/cjxgm/tearly/readme
+type: text/vnd.tiddlywiki
+
+! Tearly: Tear apart TiddlyWiki for cache-friendliness
+
+''WORK IN PROGRESS''
+
+I just want to use TiddlyWiki as a new form of static blog. But everytime I
+update the "blog", the user have to download megabytes of data. Awful!
+
+With Tearly, the user still downloads megabytes of data
+the first time they come to visit, but later updates only
+apply a `diff` of pressure on the user -- only updated tiddlers
+get downloaded, all other big ones (like "core",
+or "KaTeX plugin" something) get reused from the browser cache. Great!
+
+And, NPM SUCKS TO ASS! This plugin requires only a static server with
+WebDAV support (only need `MKCOL`, `PUT`, `DELETE` methods). Guess what,
+nginx will do!
+

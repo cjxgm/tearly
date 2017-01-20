@@ -1,0 +1,35 @@
+created: 20170120142737381
+modified: 20170120142922829
+tags: 
+title: $:/plugins/cjxgm/tearly/usage
+type: text/vnd.tiddlywiki
+
+!! nginx Configuration Example
+
+```
+server {
+    set $root $www/wiki;
+
+    listen 7777;
+    root $root;
+    client_max_body_size 10m;
+
+    # Cache-Control is required for proper cache revalidation.
+    # You may also use this so that even revalidation will be cached:
+    #add_header Cache-Control max-age=60;
+    add_header Cache-Control max-age=0,must-revalidate;
+
+    location / {
+        index index.html;
+        dav_methods PUT DELETE MKCOL;
+        limit_except GET {
+            auth_basic "Mutation requires login.";
+            auth_basic_user_file $root/password;
+        }
+    }
+
+    location /password {
+        return 404;
+    }
+}
+```
