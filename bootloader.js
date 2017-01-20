@@ -67,8 +67,6 @@
 
     /////////////////////////////////////////////////////
 
-    var $bootloader = {};
-
     function Bootloader(elBootloader)
     {
         this.elBootloader = elBootloader;
@@ -191,7 +189,7 @@
         this.elError.textContent = err;
     };
 
-    this.$bootloader = $bootloader;
+    this.$bootloader = "tearly";
 
     window.onload = ev => {
         var el = document.querySelector("#bootloader");
