@@ -1,0 +1,53 @@
+caption: {{$:/language/ControlPanel/Tearly/Caption}}
+created: 20170119082735054
+modified: 20170120085735765
+revision: 0
+tags: $:/tags/ControlPanel
+title: $:/plugins/cjxgm/tearly/ControlPanel
+type: text/vnd.tiddlywiki
+
+\define lingo-base() $:/language/ControlPanel/Tearly/
+\define bootstrap-button()
+    <$reveal type="nomatch" state="$:/config/tearly/BootstrapPrefix" text="">
+        <$reveal type="nomatch" state="$:/state/tearly/Bootstrapping" text="yes">
+            {{$:/state/tearly/Bootstrapping}}
+            <$button>
+                <$action-setfield $tiddler="$:/state/tearly/Bootstrapping" text="yes" />
+                <<lingo Bootstrap/Button/Caption>>
+            </$button>
+        </$reveal>
+        <$reveal type="match" state="$:/state/tearly/Bootstrapping" text="yes">
+            Bootstrapping...
+        </$reveal>
+    </$reveal>
+    <$reveal type="match" state="$:/config/tearly/BootstrapPrefix" text="">
+        Prefix cannot be empty.
+    </$reveal>
+\end
+\define view-prefix() <$view tiddler="$:/config/tearly/BootstrapPrefix"/>
+\define edit-prefix()
+    <$reveal type="nomatch" state="$:/state/tearly/Bootstrapping" text="yes">
+        <$edit-text tiddler="$:/config/tearly/BootstrapPrefix" default="" tag="input"/>
+    </$reveal>
+    <$reveal type="match" state="$:/state/tearly/Bootstrapping" text="yes">
+        <code><<view-prefix>></code>
+    </$reveal>
+\end
+
+! <<lingo Bootstrap/Heading>>
+
+<<lingo Bootstrap/Description>>
+
+| !Settings |<|
+|<<lingo Bootstrap/HintSettings>> |<|
+| <<lingo Bootstrap/Prefix>>|<<edit-prefix>> |
+| !Examples |<|
+|<<lingo Bootstrap/HintExamples>> |<|
+| !FIles|!Upload Path |
+| `index.html`|<code><<view-prefix>>index.html</code> |
+| `tiddlers.list`|<code><<view-prefix>>tiddlers.list</code> |
+| !Tiddlers Titles|!Upload Path |
+| `Hello World`|<code><<view-prefix>>tiddlers/Hello-World.tid</code> |
+| `$:/boot/boot.js`|<code><<view-prefix>>tiddlers/_24_3a&#95;&#95;boot&#95;&#95;boot_2ejs.tid</code> |
+| !Action |<|
+|>| <<bootstrap-button>>|
