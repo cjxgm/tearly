@@ -5,30 +5,30 @@ type: application/javascript
 module-type: syncadaptor
 \*/
 // TODO: remove this
-var $bootloader = {
-    tiddlersList: [
-        "debug",
-    ],
-};
+var $bootloader = "tearly";
 
-(function (tiddlersList) {
+(function () {
+    var WebDAV = require('$:/plugins/cjxgm/tearly/webdav.js').WebDAV;
+    var Underscode = require('$:/plugins/cjxgm/tearly/underscode.js').Underscode;
+    var Utils = require('$:/plugins/cjxgm/tearly/utils.js').Utils;
+
     function SyncAdaptor(options)
     {
-        var WebDAV = require('$:/plugins/cjxgm/tearly/webdav.js').WebDAV;
-        var Underscode = require('$:/plugins/cjxgm/tearly/underscode.js').Underscode;
-        var Utils = require('$:/plugins/cjxgm/tearly/utils.js').Utils;
-
         this.wiki = options.wiki;
         this.dav = new WebDAV();
         this.uc = new Underscode();
         this.utils = new Utils();
-        this.titles = new Set(tiddlersList);
+        this.titles = new Set(this.wiki.getTiddlers({
+            includeSystem: true,
+            sortField: "title",
+        }));
         this.onceSucceeded = false;
     }
 
     //// SyncAdaptor Interface ////
     SyncAdaptor.prototype.isReady = function () { return true };
     SyncAdaptor.prototype.getTiddlerInfo = function () {};
+    SyncAdaptor.prototype.loadTiddler = function (title, callback) { callback() };
 
     SyncAdaptor.prototype.saveTiddler = function (tiddler, callback) {
         var title = tiddler.fields.title;
@@ -75,8 +75,8 @@ var $bootloader = {
         return this.dav.put(path, list);
     }
 
-    if (tiddlersList) {
+    if ($bootloader === "tearly") {
         this.adaptorClass = SyncAdaptor;
     }
-}).call(exports, $bootloader ? $bootloader.tiddlersList : null);
+}).call(exports);
 
