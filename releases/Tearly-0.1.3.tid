@@ -1,0 +1,196 @@
+author: Giumo Clanjor
+core-version: >=5.0.0
+dependents: 
+description: Tearly: Tear apart TiddlyWiki for cache-friendliness
+list: readme usage
+plugin-type: plugin
+revision: 0
+tags: 
+title: $:/plugins/cjxgm/tearly
+type: application/json
+version: 0.1.3
+
+{
+    "tiddlers": {
+        "$:/plugins/cjxgm/tearly/action-bootstrap.js": {
+            "type": "application/javascript",
+            "module-type": "widget",
+            "title": "$:/plugins/cjxgm/tearly/action-bootstrap.js",
+            "text": "'use strict';\n/*\\\ntitle: $:/plugins/cjxgm/tearly/action-bootstrap.js\ntype: application/javascript\nmodule-type: widget\n\\*/\n\n(function () {\n    var Widget = require(\"$:/core/modules/widgets/widget.js\").widget;\n    var Bootstrap = require('$:/plugins/cjxgm/tearly/bootstrap.js').Bootstrap;\n\n    function ActionBootstrap(parseTreeNode, options)\n    {\n        this.initialise(parseTreeNode, options);\n    }\n\n    ActionBootstrap.prototype = new Widget();\n\n    ActionBootstrap.prototype.invokeAction = function () {\n        new Bootstrap(this.wiki).bootstrap();\n        return true;\n    };\n\n    this['action-tearly-bootstrap'] = ActionBootstrap;\n}).call(exports);\n\n"
+        },
+        "$:/plugins/cjxgm/tearly/bootstrap.js": {
+            "type": "application/javascript",
+            "module-type": "library",
+            "title": "$:/plugins/cjxgm/tearly/bootstrap.js",
+            "text": "'use strict';\n/*\\\ntitle: $:/plugins/cjxgm/tearly/bootstrap.js\ntype: application/javascript\nmodule-type: library\n\\*/\n\n(function () {\n    var WebDAV = require('$:/plugins/cjxgm/tearly/webdav.js').WebDAV;\n    var Underscode = require('$:/plugins/cjxgm/tearly/underscode.js').Underscode;\n    var Utils = require('$:/plugins/cjxgm/tearly/utils.js').Utils;\n\n    function Bootstrap(wiki)\n    {\n        this.wiki = wiki;\n        this.dav = new WebDAV();\n        this.uc = new Underscode();\n        this.utils = new Utils();\n        this.used = false;\n        this.prefix = this.tiddlerText(\"$:/config/tearly/BootstrapPrefix\");\n        this.tiddlersTitles = this.utils.tiddlersTitles(this.wiki);\n        this.tiddlersList = this.tiddlersTitles.map(x => this.titlePath(x, true)).join(\"\\n\");\n    }\n\n    // What needs to be done:\n    //\n    // - MKCOL {{prefix}}tiddlers/\n    // - PUT {{prefix}}tiddlers.list\n    // - PUT {{prefix}}bootloader.{html,css,js}\n    // - PUT tiddlers that match $:/config/SyncFilter\n    //       with path {{prefix}}tiddlers/{{encodedTitle}}.tid\n    Bootstrap.prototype.bootstrap = function () {\n        if (this.used) throw Error(\"Bootstrap object can only be used once.\");\n        this.used = true;\n\n        Promise.resolve()\n            .then(() => this.uploadStructure())\n            .then(() => this.uploadBootloader())\n            .then(() => this.uploadTiddlers())\n            .then(() => this.done())\n            .catch(err => {\n                console.error(err);\n                this.setStatus(\"@@color:red;''Failed.''@@\");\n                alert(err);\n            })\n        ;\n    };\n\n    Bootstrap.prototype.done = function () {\n        this.setStatus(\"''Success.''\");\n    };\n\n\n    Bootstrap.prototype.uploadStructure = function () {\n        return Promise.resolve()\n            .then(() => this.dav.mkcol(this.fullPath(\"tiddlers/\")))\n            .then(() => this.dav.put(this.fullPath(\"tiddlers.list\"), this.tiddlersList))\n        ;\n    };\n\n    Bootstrap.prototype.uploadBootloader = function () {\n        var uploads = [\n            // [ extension, rename ]\n            [ 'html', 'index' ],\n            [ 'css' ],\n            [ 'js' ],\n        ];\n        var pathPairs = uploads.map(upload => {\n            var ext = upload[0];\n            var name = upload[1] || \"bootloader\";\n            var dst = this.fullPath(name + \".\" + ext);\n            var src = \"$:/plugins/cjxgm/tearly/bootloader.\" + ext;\n            return [ dst, src ];\n        });\n        var pending = pathPairs.map(pair => {\n            var path = pair[0];\n            var text = this.tiddlerText(pair[1]);\n            return this.dav.put(path, text);\n        });\n        return Promise.all(pending);\n    };\n\n    Bootstrap.prototype.uploadTiddlers = function () {\n        var pending = this.tiddlersTitles.map(title => {\n            var path = this.titlePath(title);\n            var tiddler = this.wiki.getTiddler(title);\n            tiddler = this.utils.encodeTiddler(tiddler);\n            return this.dav.put(path, tiddler);\n        });\n        return Promise.all(pending);\n    };\n\n    Bootstrap.prototype.setStatus = function (status) {\n        this.setTiddlerText(\"$:/state/tearly/Bootstrapping\", status);\n    };\n\n    Bootstrap.prototype.setTiddlerText = function (title, text) {\n        this.wiki.setText(title, null, null, text);\n    };\n\n    Bootstrap.prototype.tiddlerText = function (title) {\n        return this.wiki.getTiddlerText(title);\n    }\n\n    Bootstrap.prototype.fullPath = function (path) {\n        return this.prefix + path;\n    }\n\n    Bootstrap.prototype.titlePath = function (title, forLoading) {\n        var titlePath = \"tiddlers/\" + this.uc.encode(title) + \".tid\";\n        return forLoading ? \"./\" + titlePath : this.fullPath(titlePath);\n    }\n\n    this.Bootstrap = Bootstrap;\n}).call(exports);\n\n"
+        },
+        "$:/plugins/cjxgm/tearly/syncadaptor.js": {
+            "type": "application/javascript",
+            "module-type": "syncadaptor",
+            "title": "$:/plugins/cjxgm/tearly/syncadaptor.js",
+            "text": "'use strict';\n/*\\\ntitle: $:/plugins/cjxgm/tearly/syncadaptor.js\ntype: application/javascript\nmodule-type: syncadaptor\n\\*/\n\n(function () {\n    var WebDAV = require('$:/plugins/cjxgm/tearly/webdav.js').WebDAV;\n    var Underscode = require('$:/plugins/cjxgm/tearly/underscode.js').Underscode;\n    var Utils = require('$:/plugins/cjxgm/tearly/utils.js').Utils;\n\n    function SyncAdaptor(options)\n    {\n        this.wiki = options.wiki;\n        this.dav = new WebDAV();\n        this.uc = new Underscode();\n        this.utils = new Utils();\n        this.titles = new Set(this.utils.tiddlersTitles(this.wiki));\n        this.onceSucceeded = false;\n    }\n\n    //// SyncAdaptor Interface ////\n    SyncAdaptor.prototype.isReady = function () { return true };\n    SyncAdaptor.prototype.getTiddlerInfo = function () {};\n    SyncAdaptor.prototype.loadTiddler = function (title, callback) { callback() };\n\n    SyncAdaptor.prototype.saveTiddler = function (tiddler, callback) {\n        var title = tiddler.fields.title;\n\n        // Special treatment for StoryList.\n        if (title === \"$:/StoryList\") {\n            // Don't save StoryList if you haven't saved any other stuff.\n            if (!this.onceSucceeded) return callback();\n        }\n\n        var tiddlerPath = \"./tiddlers/\" + this.uc.encode(title) + \".tid\";\n        var tiddler = this.utils.encodeTiddler(tiddler);\n        this.addTitle(title)\n            .then(() => this.dav.put(tiddlerPath, tiddler))\n            .then(() => this.onceSucceeded = true)\n            .then(() => callback(), err => callback(err));\n    };\n\n    SyncAdaptor.prototype.deleteTiddler = function (title, callback) {\n        var tiddlerPath = \"./tiddlers/\" + this.uc.encode(title) + \".tid\";\n        return this.deleteTitle(title)\n            .then(deleted => { if (deleted) this.dav.delete(tiddlerPath) })\n            .then(() => this.onceSucceeded = true)\n            .then(() => callback(), err => callback(err));\n    };\n\n    //// Internals ////\n    SyncAdaptor.prototype.addTitle = function (title) {\n        if (this.titles.has(title))\n            return Promise.resolve();\n        this.titles.add(title);\n        return this.updateTitles();\n    }\n\n    SyncAdaptor.prototype.deleteTitle = function (title) {\n        if (this.titles.delete(title))\n            return this.updateTitles().then(() => true);\n        return Promise.resolve(false);\n    }\n\n    SyncAdaptor.prototype.updateTitles = function () {\n        var path = \"./tiddlers.list\";\n        var list = [...this.titles].map(x => this.titlePath(x)).join(\"\\n\");\n        return this.dav.put(path, list);\n    }\n\n    SyncAdaptor.prototype.titlePath = function (title) {\n        return \"./tiddlers/\" + this.uc.encode(title) + \".tid\";\n    }\n\n    if (window.$bootloader === \"tearly\") {\n        this.adaptorClass = SyncAdaptor;\n    }\n}).call(exports);\n\n"
+        },
+        "$:/plugins/cjxgm/tearly/utils.js": {
+            "type": "application/javascript",
+            "module-type": "library",
+            "title": "$:/plugins/cjxgm/tearly/utils.js",
+            "text": "'use strict';\n/*\\\ntitle: $:/plugins/cjxgm/tearly/utils.js\ntype: application/javascript\nmodule-type: library\n\\*/\n\n(function (tiddlersList) {\n    function Utils() {}\n\n    Utils.prototype.encodeTiddler = function(tiddler) {\n        var fields = tiddler.fields;\n        var rest = JSON.stringify(fields, (k, v) => (k === \"title\" || k === \"text\") ? undefined : v);\n        var text = fields.title + \"\\n\" + rest + \"\\n\" + fields.text;\n        return text;\n    };\n\n    Utils.prototype.tiddlersTitles = function(wiki) {\n        var filter = wiki.getTiddlerText(\"$:/config/SyncFilter\");\n        var filter = wiki.compileFilter(filter);\n        var titles = filter.call(wiki).sort();\n        return titles;\n    };\n\n    this.Utils = Utils;\n}).call(exports);\n\n"
+        },
+        "$:/plugins/cjxgm/tearly/webdav.js": {
+            "type": "application/javascript",
+            "module-type": "library",
+            "title": "$:/plugins/cjxgm/tearly/webdav.js",
+            "text": "'use strict';\n/*\\\ntitle: $:/plugins/cjxgm/tearly/webdav.js\ntype: application/javascript\nmodule-type: library\n\\*/\n\n(function (tiddlersList) {\n    function WebDAV() {}\n\n    WebDAV.prototype.put = function(path, text) {\n        console.log(\"DAV-PUT\", path, { text: text });\n\n        return new Promise((resolve, reject) => {\n            var req = this.xhr(reject,\n                    req => resolve(),\n                    req => {\n                        reject(new Error(req.statusText + \"\\n\" + req.responseText));\n                    });\n            req.open(\"PUT\", path);\n            req.setRequestHeader(\"Content-Type\", \"text/plain;charset=UTF-8\");\n            req.send(text);\n        });\n    };\n\n    WebDAV.prototype.delete = function(path) {\n        console.log(\"DAV-DELETE\", path);\n\n        return new Promise((resolve, reject) => {\n            var req = this.xhr(reject,\n                    req => resolve(true),\n                    req => {\n                        if (req.status === 404) {     // file not found\n                            resolve(false);\n                        } else {\n                            reject(new Error(req.statusText + \"\\n\" + req.responseText));\n                        }\n                    });\n            req.open(\"DELETE\", path);\n            req.send();\n        });\n    };\n\n    WebDAV.prototype.mkcol = function(path) {\n        console.log(\"DAV-MKCOL\", path);\n        if (!path.endsWith(\"/\")) throw new Error(\"Path for MKCOL must end with a slash: \" + path);\n\n        return new Promise((resolve, reject) => {\n            var req = this.xhr(reject,\n                    req => resolve(true),\n                    req => {\n                        if (req.status === 405) {     // maybe collection exists already\n                            resolve(false);\n                        } else {\n                            reject(new Error(req.statusText + \"\\n\" + req.responseText));\n                        }\n                    });\n            req.open(\"MKCOL\", path);\n            req.send();\n        });\n    };\n\n    WebDAV.prototype.xhr = function(reject, ok, fail) {\n        var req = new XMLHttpRequest();\n        req.onload = function() {\n            if (this.status >= 200 && this.status < 300) {\n                ok(this);\n            } else {\n                fail(this);\n            }\n        };\n        req.onerror = function (ev) {\n            console.error(ev);\n            reject(new Error(\"interrupted\"));\n        };\n        req.onabort = function (ev) {\n            console.error(ev);\n            reject(new Error(\"abort\"));\n        };\n        return req;\n    }\n\n    this.WebDAV = WebDAV;\n}).call(exports);\n\n"
+        },
+        "$:/plugins/cjxgm/tearly/underscode.js": {
+            "type": "application/javascript",
+            "module-type": "library",
+            "title": "$:/plugins/cjxgm/tearly/underscode.js",
+            "text": "'use strict';\n/*\\\ntitle: $:/plugins/cjxgm/tearly/underscode.js\ntype: application/javascript\nmodule-type: library\n\\*/\n\n(function () {\n    function Underscode() {}\n\n    // preserve only /[A-Za-z0-9]/, represent space as \"-\" and slash as \"__\".\n    // encode(\"/hello world/no.yes\") -> \"__hello-world__no_2eyes\"\n    //\n    // Anything that matches /[^A-Za-z0-9]/ will be converted to UTF-8\n    // code units (bytes) in lowercase double-digit hex with \"_\" prefixed\n    // on each byte.\n    //\n    // e.g. \"-\" is 0x2d in UTF-8, so it is represented as \"_2d\".\n    Underscode.prototype.encode = function (text) {\n        text = encodeURIComponent(text);\n        text = text.replace(/[!'()*~_.-]/g, c => '%' + c.charCodeAt(0).toString(16));\n        text = text.replace(/%/g, \"_\");\n        text = text.replace(/_[A-F0-9]{2}/g, c => c.toLowerCase());\n        text = text.replace(/_20/g, \"-\");       // represent space as \"-\"\n        text = text.replace(/_2f/g, \"__\");      // represent slash as \"__\"\n        return text;\n    }\n\n    Underscode.prototype.decode = function (text) {\n        text = text.replace(/-/g, \"_20\");\n        text = text.replace(/__/g, \"_2f\");\n        text = text.replace(/_/g, \"%\");\n        text = decodeURIComponent(text);\n        return text;\n    }\n\n    this.Underscode = Underscode;\n}).call(exports);\n\n"
+        },
+        "$:/core/ui/Buttons/download-wiki": {
+            "title": "$:/core/ui/Buttons/download-wiki",
+            "type": "text/vnd.tiddlywiki",
+            "caption": "{{$:/core/images/download-button}} {{$:/language/Buttons/DownloadWiki/Caption}}",
+            "created": "20170119075659431",
+            "description": "{{$:/language/Buttons/DownloadWiki/Hint}}",
+            "list-before": "$:/core/ui/Buttons/save-wiki",
+            "modified": "20170119081001753",
+            "tags": "$:/tags/PageControls",
+            "text": "<$button message=\"tm-download-file\" param=\"$:/core/save/all\" tooltip={{$:/language/Buttons/DownloadWiki/Hint}} aria-label={{$:/language/Buttons/DownloadWiki/Caption}} class=<<tv-config-toolbar-class>>>\n<$list filter=\"[<tv-config-toolbar-icons>prefix[yes]]\">\n{{$:/core/images/download-button}}\n</$list>\n<$list filter=\"[<tv-config-toolbar-text>prefix[yes]]\">\n<span class=\"tc-btn-text\"><$text text={{$:/language/Buttons/DownloadWiki/Caption}}/></span>\n</$list>\n</$button>"
+        },
+        "$:/language/Buttons/DownloadWiki/Caption": {
+            "title": "$:/language/Buttons/DownloadWiki/Caption",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119080636606",
+            "modified": "20170119080714501",
+            "tags": "",
+            "text": "download whole site"
+        },
+        "$:/language/Buttons/DownloadWiki/Hint": {
+            "title": "$:/language/Buttons/DownloadWiki/Hint",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119080724824",
+            "modified": "20170119080754017",
+            "tags": "",
+            "text": "Download the whole site as a single offline HTML."
+        },
+        "$:/plugins/cjxgm/tearly/readme": {
+            "title": "$:/plugins/cjxgm/tearly/readme",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170120142600403",
+            "modified": "20170120142726537",
+            "text": "! Tearly: Tear apart TiddlyWiki for cache-friendliness\n\n''WORK IN PROGRESS''\n\nI just want to use TiddlyWiki as a new form of static blog. But everytime I\nupdate the \"blog\", the user have to download megabytes of data. Awful!\n\nWith Tearly, the user still downloads megabytes of data\nthe first time they come to visit, but later updates only\napply a `diff` of pressure on the user -- only updated tiddlers\nget downloaded, all other big ones (like \"core\",\nor \"KaTeX plugin\" something) get reused from the browser cache. Great!\n\nAnd, NPM SUCKS TO ASS! This plugin requires only a static server with\nWebDAV support (only need `MKCOL`, `PUT`, `DELETE` methods). Guess what,\nnginx will do!\n\n"
+        },
+        "$:/plugins/cjxgm/tearly/usage": {
+            "title": "$:/plugins/cjxgm/tearly/usage",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170120142737381",
+            "modified": "20170120142922829",
+            "tags": "",
+            "text": "!! nginx Configuration Example\n\n```\nserver {\n    set $root $www/wiki;\n\n    listen 7777;\n    root $root;\n    client_max_body_size 10m;\n\n    # Cache-Control is required for proper cache revalidation.\n    # You may also use this so that even revalidation will be cached:\n    #add_header Cache-Control max-age=60;\n    add_header Cache-Control max-age=0,must-revalidate;\n\n    location / {\n        index index.html;\n        dav_methods PUT DELETE MKCOL;\n        limit_except GET {\n            auth_basic \"Mutation requires login.\";\n            auth_basic_user_file $root/password;\n        }\n    }\n\n    location /password {\n        return 404;\n    }\n}\n```"
+        },
+        "$:/config/tearly/BootstrapPrefix": {
+            "title": "$:/config/tearly/BootstrapPrefix",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119091736719",
+            "modified": "20170119095532705",
+            "tags": "",
+            "text": "./"
+        },
+        "$:/core/modules/savers/put.js": {
+            "title": "$:/core/modules/savers/put.js",
+            "type": "application/javascript",
+            "created": "20170120135441812",
+            "modified": "20170120135507731",
+            "text": "// removed"
+        },
+        "$:/language/ControlPanel/Tearly/Bootstrap/Button/Caption": {
+            "title": "$:/language/ControlPanel/Tearly/Bootstrap/Button/Caption",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119084554666",
+            "modified": "20170119084638188",
+            "tags": "",
+            "text": "Bootstrap"
+        },
+        "$:/language/ControlPanel/Tearly/Bootstrap/Description": {
+            "title": "$:/language/ControlPanel/Tearly/Bootstrap/Description",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119083331068",
+            "modified": "20170119190441790",
+            "tags": "",
+            "text": "On normal usage, Tearly will upload your changes to your server through WebDAV by `PUT` and `DELETE` methods to/on the same URL in the browser address bar. But before that, you need to bootstrap Tearly to your server --- tear apart the whole wiki to individual Tiddlers and upload them one by one via WebDAV by `PUT` and `MKCOL` methods.\n\nBootstrapping can also be used to recover previous errors --- by reuploading the whole wiki again."
+        },
+        "$:/language/ControlPanel/Tearly/Bootstrap/Heading": {
+            "title": "$:/language/ControlPanel/Tearly/Bootstrap/Heading",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119083259183",
+            "modified": "20170119083323724",
+            "tags": "",
+            "text": "Bootstrapping Tearly"
+        },
+        "$:/language/ControlPanel/Tearly/Bootstrap/HintExamples": {
+            "title": "$:/language/ControlPanel/Tearly/Bootstrap/HintExamples",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119101933918",
+            "modified": "20170119102015014",
+            "tags": "",
+            "text": "''Hint:'' //This is not a list of what will be uploaded!// They are just examples for you to see what the upload path will become when Prefix is set to <code><<view-prefix>></code>."
+        },
+        "$:/language/ControlPanel/Tearly/Bootstrap/HintSettings": {
+            "title": "$:/language/ControlPanel/Tearly/Bootstrap/HintSettings",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119102115996",
+            "modified": "20170119102649023",
+            "tags": "",
+            "text": "''Hint:'' It's usually a good idea to make Prefix end with `/`. The prefix can be a relative path like `./` or an absolute path like `/` or `https://example.com/wiki/`."
+        },
+        "$:/language/ControlPanel/Tearly/Bootstrap/Prefix": {
+            "title": "$:/language/ControlPanel/Tearly/Bootstrap/Prefix",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119083405849",
+            "modified": "20170119083417253",
+            "tags": "",
+            "text": "Prefix:\n"
+        },
+        "$:/language/ControlPanel/Tearly/Caption": {
+            "title": "$:/language/ControlPanel/Tearly/Caption",
+            "type": "text/vnd.tiddlywiki",
+            "created": "20170119083229159",
+            "modified": "20170119083244150",
+            "tags": "",
+            "text": "Tearly"
+        },
+        "$:/plugins/cjxgm/tearly/ControlPanel": {
+            "title": "$:/plugins/cjxgm/tearly/ControlPanel",
+            "type": "text/vnd.tiddlywiki",
+            "caption": "{{$:/language/ControlPanel/Tearly/Caption}}",
+            "created": "20170119082735054",
+            "modified": "20170120122815680",
+            "revision": "0",
+            "tags": "$:/tags/ControlPanel",
+            "text": "\\define lingo-base() $:/language/ControlPanel/Tearly/\n\\define bootstrap-button()\n    <$reveal type=\"nomatch\" state=\"$:/config/tearly/BootstrapPrefix\" text=\"\">\n        <$reveal type=\"nomatch\" state=\"$:/state/tearly/Bootstrapping\" text=\"yes\">\n            {{$:/state/tearly/Bootstrapping}}\n            <$button>\n                <$action-setfield $tiddler=\"$:/state/tearly/Bootstrapping\" text=\"yes\" />\n                <$action-tearly-bootstrap />\n                <<lingo Bootstrap/Button/Caption>>\n            </$button>\n        </$reveal>\n        <$reveal type=\"match\" state=\"$:/state/tearly/Bootstrapping\" text=\"yes\">\n            Bootstrapping...\n        </$reveal>\n    </$reveal>\n    <$reveal type=\"match\" state=\"$:/config/tearly/BootstrapPrefix\" text=\"\">\n        Prefix cannot be empty.\n    </$reveal>\n\\end\n\\define view-prefix() <$view tiddler=\"$:/config/tearly/BootstrapPrefix\"/>\n\\define edit-prefix()\n    <$reveal type=\"nomatch\" state=\"$:/state/tearly/Bootstrapping\" text=\"yes\">\n        <$edit-text tiddler=\"$:/config/tearly/BootstrapPrefix\" default=\"\" tag=\"input\"/>\n    </$reveal>\n    <$reveal type=\"match\" state=\"$:/state/tearly/Bootstrapping\" text=\"yes\">\n        <code><<view-prefix>></code>\n    </$reveal>\n\\end\n\n! <<lingo Bootstrap/Heading>>\n\n<<lingo Bootstrap/Description>>\n\n| !Settings |<|\n|<<lingo Bootstrap/HintSettings>> |<|\n| <<lingo Bootstrap/Prefix>>|<<edit-prefix>> |\n| !Examples |<|\n|<<lingo Bootstrap/HintExamples>> |<|\n| !FIles|!Upload Path |\n| `index.html`|<code><<view-prefix>>index.html</code> |\n| `tiddlers.list`|<code><<view-prefix>>tiddlers.list</code> |\n| !Tiddlers Titles|!Upload Path |\n| `Hello World`|<code><<view-prefix>>tiddlers/Hello-World.tid</code> |\n| `$:/boot/boot.js`|<code><<view-prefix>>tiddlers/_24_3a&#95;&#95;boot&#95;&#95;boot_2ejs.tid</code> |\n| !Action |<|\n|>| <<bootstrap-button>>|\n"
+        },
+        "$:/plugins/cjxgm/tearly/bootloader.css": {
+            "type": "text/css",
+            "modified": "NaNNaNNaNNaNNaNNaNNaN",
+            "created": "NaNNaNNaNNaNNaNNaNNaN",
+            "title": "$:/plugins/cjxgm/tearly/bootloader.css",
+            "text": "#bootloader, #bootloader * {\n    box-sizing: border-box;\n    margin: 0;\n    padding: 0;\n}\n\n#bootloader {\n    position: fixed;\n    left: 0;\n    top: 0;\n\n    display: flex;\n    flex-direction: column;\n    justify-content: center;\n    align-items: center;\n\n    width: 100vw;\n    height: 100vh;\n    padding: 50px;\n\n    font-family: monospace;\n    font-size: 12px;\n\n    background-color: rgba(255, 255, 255, 1);\n    opacity: 1;\n    transition: opacity ease-out 0.4s, background-color ease-out 0.2s;\n}\n\n#bootloader .progress-container {\n    min-width: 100px;\n    max-width: 400px;\n    width: 100%;\n    height: 8px;\n\n    margin: 1em;\n    padding: 1px;\n    overflow: hidden;\n\n    background-color: #EEE;\n    border: 1px solid #AAA;\n}\n\n#bootloader .progress-container > .progress {\n    height: 100%;\n    width: 0;\n    background-color: #AAA;\n    transition: width ease-out 0.4s;\n}\n\n#bootloader .error {\n    color: #F32;\n}\n\n"
+        },
+        "$:/plugins/cjxgm/tearly/bootloader.html": {
+            "type": "text/html",
+            "modified": "NaNNaNNaNNaNNaNNaNNaN",
+            "created": "NaNNaNNaNNaNNaNNaNNaN",
+            "title": "$:/plugins/cjxgm/tearly/bootloader.html",
+            "text": "<!doctype html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, height=device-height, initial-scale=1.0\">\n    <title>Tearly Bootloader</title>\n    <link rel=\"stylesheet\" href=\"./bootloader.css\">\n    <script src=\"./bootloader.js\" defer async></script>\n</head>\n<body class=\"tc-body\">\n    <div id=\"bootloader\">\n        <div class=\"progress-container\">\n            <div class=\"progress\"></div>\n        </div>\n        <div class=\"error\"></div>\n    </div>\n</body>\n</html>\n\n"
+        },
+        "$:/plugins/cjxgm/tearly/bootloader.js": {
+            "type": "application/javascript",
+            "modified": "NaNNaNNaNNaNNaNNaNNaN",
+            "created": "NaNNaNNaNNaNNaNNaNNaN",
+            "title": "$:/plugins/cjxgm/tearly/bootloader.js",
+            "text": "'use strict';\n\n(function () {\n    function Aborted() {}\n\n    /////////////////////////////////////////////////////\n\n    function Utils() {}\n\n    Utils.prototype.clamp = function(x, min, max) {\n        return Math.max(Math.min(x, max), min);\n    };\n\n    Utils.prototype.get = function(url, progress) {\n        progress = progress || (frac => {});\n        return new Promise((resolve, reject) => {\n            progress(0);\n            var req = new XMLHttpRequest();\n            req.onload = function() {\n                if (this.status >= 200 && this.status < 300) {\n                    progress(1);\n                    resolve(this.responseText);\n                }\n                else {\n                    reject(new Error(this.statusText + \"\\n\" + this.responseText));\n                }\n            };\n            req.onerror = function (ev) {\n                console.error(ev);\n                if (ev.type === 'error') {\n                    reject(new Error(\"interrupted\"));\n                } else {\n                    reject(new Error(\"unknown error\"));\n                }\n            };\n            req.onabort = function (ev) {\n                console.error(ev);\n                reject(new Aborted());\n            };\n            req.onprogress = function (ev) {\n                if (ev.lengthComputable) progress(ev.loaded / ev.total);\n            };\n            req.open(\"GET\", url);\n            req.overrideMimeType(\"text/plain\");\n            req.send();\n        });\n    };\n\n    Utils.prototype.later = function(ms) {\n        return new Promise((resolve, reject) => {\n            window.setTimeout(() => resolve(), ms);\n        });\n    };\n\n    Utils.prototype.decodeTiddlerFields = function(text) {\n        text = text.split(\"\\n\");\n\n        var title = text.splice(0, 1)[0];\n        var fields = JSON.parse(text.splice(0, 1)[0]);\n        text = text.join(\"\\n\");\n\n        fields.title = title;\n        fields.text = text;\n\n        return fields;\n    };\n\n    /////////////////////////////////////////////////////\n\n    function Bootloader(elBootloader)\n    {\n        this.elBootloader = elBootloader;\n        this.elProgress = elBootloader.querySelector(\".progress\");\n        this.elError = elBootloader.querySelector(\".error\");\n        this.utils = new Utils();\n        this.config = {\n            tiddlersList: \"./tiddlers.list\",\n            kernelPrefix: \"$:/boot/bootprefix.js\",\n            kernel: \"$:/boot/boot.js\",\n        };\n    }\n\n    Bootloader.prototype.boot = function () {\n        this.loadTiddlersList()\n            .then(list => this.loadTiddlers(list))\n            .then(tiddlers => this.bootKernelPrefix(tiddlers))\n            .then(tiddlers => this.bootTiddlers(tiddlers))\n            .then(kernelTiddler => this.bootKernel(kernelTiddler))\n            .then(() => this.done())\n            .catch(err => {\n                console.error(err);\n                this.showError(\"ABORTED\");\n                this.utils.later(400).then(() => {\n                    if (!(err instanceof Aborted)) alert(err);\n                    debugger;\n                    throw err;     // stop the rest of script from execution\n                });\n            })\n        ;\n    };\n\n    Bootloader.prototype.loadTiddlersList = function () {\n        this.setProgressInit();\n        return this.utils.get(this.config.tiddlersList)\n            .then(titles => titles.split(/\\n+/).filter(x => x.length));\n    };\n\n    Bootloader.prototype.loadTiddlers = function (pathList) {\n        this.setProgressLoading(0, 1);\n        var progresses = [];\n        var pending = [];\n        var rejected = false;\n        pathList.forEach((path, i) => {\n            var load = this.utils.get(path, frac => {\n                if (rejected) return;\n                progresses[i] = frac;\n                var progress = progresses.reduce((x, y) => x + y, 0);\n                this.setProgressLoading(progress, pathList.length);\n            }).catch(err => {\n                rejected = true;\n                throw err;\n            });\n            pending.push(load);\n        });\n        return Promise.all(pending)\n            .then(tiddlers => tiddlers.map(text => this.utils.decodeTiddlerFields(text)));\n    };\n\n    Bootloader.prototype.bootKernelPrefix = function (tiddlers) {\n        return this.utils.later().then(() => {\n            var tiddler = tiddlers.find(x => x.title === this.config.kernelPrefix);\n            if (!tiddler) throw new Error(\"kernel prefix not found: \" + this.config.kernelPrefix);\n            eval.call(window, tiddler.text);\n            return tiddlers;\n        });\n    };\n\n    Bootloader.prototype.bootTiddlers = function (tiddlers) {\n        return this.utils.later().then(() => {\n            var kernel = tiddlers.find(x => x.title === this.config.kernel);\n            window.$tw.preloadTiddlerArray(tiddlers);\n            return kernel;\n        });\n    };\n\n    Bootloader.prototype.bootKernel = function (kernelTiddler) {\n        return this.utils.later(400).then(() => {\n            if (!kernelTiddler) throw new Error(\"kernel not found: \" + this.config.kernel);\n            eval.call(window, kernelTiddler.text);\n        });\n    };\n\n    Bootloader.prototype.done = function () {\n        console.log(\"bootloader done.\");\n        this.setProgress(1);\n        this.utils.later(200)\n            .then(() => this.setBootloaderOpacity(0))\n            .then(() => this.utils.later(600))\n            .then(() => this.hideBootloader());\n        ;\n    };\n\n    Bootloader.prototype.setProgressInit = function () {\n        this.setProgress(0.05);\n    };\n\n    // initial progress is 10%, last progress is 99%\n    Bootloader.prototype.setProgressLoading = function (i, total) {\n        this.setProgress(i / total * 0.89 + 0.10);\n    };\n\n    Bootloader.prototype.setProgress = function (frac) {\n        frac = Math.exp((frac - 1) * 5);\n        var percent = this.utils.clamp(parseInt(frac * 100), 0, 100);\n        this.elProgress.style.width = percent + \"%\";\n    };\n\n    Bootloader.prototype.setBootloaderOpacity = function (opacity) {\n        this.elBootloader.style.backgroundColor = \"rgba(255, 255, 255, \" + opacity + \")\";\n        this.utils.later(200).then(() => this.elBootloader.style.opacity = opacity);\n    };\n\n    Bootloader.prototype.hideBootloader = function () {\n        this.elBootloader.style.display = \"none\";\n    };\n\n    Bootloader.prototype.showError = function (err) {\n        this.elError.textContent = err;\n    };\n\n    this.$bootloader = \"tearly\";\n\n    window.onload = ev => {\n        var el = document.querySelector(\"#bootloader\");\n        var bl = new Bootloader(el);\n        bl.boot();\n    };\n}).call(this);\n\n"
+        }
+    }
+}
