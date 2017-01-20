@@ -11,3 +11,7 @@ apply a `diff` of pressure on the user -- only updated tiddlers
 get downloaded, all other big ones (like "core",
 or "KaTeX plugin" something) get reused from the browser cache. Great!
 
+And, NPM SUCKS TO ASS! This plugin requires only a static server with
+WebDAV support (only need `MKCOL`, `PUT`, `DELETE` methods). Guess what,
+nginx will do!
+
