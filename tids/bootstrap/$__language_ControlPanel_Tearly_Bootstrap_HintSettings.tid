@@ -2,6 +2,6 @@ created: 20170119102115996
 modified: 20170119102649023
 tags: 
 title: $:/language/ControlPanel/Tearly/Bootstrap/HintSettings
-type: application/x-tiddler
+type: text/vnd.tiddlywiki
 
 ''Hint:'' It's usually a good idea to make Prefix end with `/`. The prefix can be a relative path like `./` or an absolute path like `/` or `https://example.com/wiki/`.

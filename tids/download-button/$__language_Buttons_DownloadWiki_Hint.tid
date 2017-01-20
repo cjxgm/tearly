@@ -2,5 +2,6 @@ created: 20170119080724824
 modified: 20170119080754017
 tags: 
 title: $:/language/Buttons/DownloadWiki/Hint
+type: text/vnd.tiddlywiki
 
 Download the whole site as a single offline HTML.

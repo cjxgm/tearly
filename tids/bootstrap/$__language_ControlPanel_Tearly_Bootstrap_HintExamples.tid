@@ -2,6 +2,6 @@ created: 20170119101933918
 modified: 20170119102015014
 tags: 
 title: $:/language/ControlPanel/Tearly/Bootstrap/HintExamples
-type: application/x-tiddler
+type: text/vnd.tiddlywiki
 
 ''Hint:'' //This is not a list of what will be uploaded!// They are just examples for you to see what the upload path will become when Prefix is set to <code><<view-prefix>></code>.

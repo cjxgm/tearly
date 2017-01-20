@@ -5,6 +5,7 @@ list-before: $:/core/ui/Buttons/save-wiki
 modified: 20170119081001753
 tags: $:/tags/PageControls
 title: $:/core/ui/Buttons/download-wiki
+type: text/vnd.tiddlywiki
 
 <$button message="tm-download-file" param="$:/core/save/all" tooltip={{$:/language/Buttons/DownloadWiki/Hint}} aria-label={{$:/language/Buttons/DownloadWiki/Caption}} class=<<tv-config-toolbar-class>>>
 <$list filter="[<tv-config-toolbar-icons>prefix[yes]]">
