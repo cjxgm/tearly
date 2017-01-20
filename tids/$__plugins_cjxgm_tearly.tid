@@ -1,0 +1,13 @@
+created: 20170119184110951
+dependents: 
+description: Tearly
+modified: 20170119190124578
+plugin-type: plugin
+tags: 
+title: $:/plugins/cjxgm/tearly
+type: application/json
+version: 0.1.0
+
+{
+    "tiddlers": {}
+}
